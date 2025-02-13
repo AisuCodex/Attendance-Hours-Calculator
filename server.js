@@ -9,11 +9,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the dist directory
+app.use(express.static(join(__dirname, 'dist')));
 
 // Ensure data directory exists
 const dataDir = join(__dirname, 'data');
@@ -130,6 +133,11 @@ app.delete('/api/records/:id', (req, res) => {
     console.error('Error deleting record:', error);
     res.status(500).json({ error: error.message });
   }
+});
+
+// Handle all other routes by serving the index.html
+app.get('*', (req, res) => {
+  res.sendFile(join(__dirname, 'dist', 'index.html'));
 });
 
 app.listen(port, () => {
