@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 export async function saveRecord(record) {
   console.log('Saving record:', record);
