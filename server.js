@@ -15,8 +15,18 @@ const port = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from the dist directory
-app.use(express.static(join(__dirname, 'dist')));
+// Serve static files from the dist directory with proper MIME types
+app.use(
+  express.static(join(__dirname, 'dist'), {
+    setHeaders: (res, path) => {
+      if (path.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript');
+      } else if (path.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css');
+      }
+    },
+  })
+);
 
 // Ensure data directory exists
 const dataDir = join(__dirname, 'data');
@@ -137,7 +147,9 @@ app.delete('/api/records/:id', (req, res) => {
 
 // Handle all other routes by serving the index.html
 app.get('*', (req, res) => {
-  res.sendFile(join(__dirname, 'dist', 'index.html'));
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(join(__dirname, 'dist', 'index.html'));
+  }
 });
 
 app.listen(port, () => {
