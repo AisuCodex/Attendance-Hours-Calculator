@@ -218,13 +218,30 @@ function App() {
 
   const handleSignatureUpload = (id, event) => {
     const file = event.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        handleRecordUpdate(id, 'imageUrl', e.target.result);
-      };
-      reader.readAsDataURL(file);
+    const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      showSaveStatus('Please upload an image file', true);
+      return;
     }
+
+    // Check file size
+    if (file.size > maxSize) {
+      showSaveStatus('Image size should be less than 10MB', true);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      handleRecordUpdate(id, 'imageUrl', e.target.result);
+    };
+    reader.onerror = () => {
+      showSaveStatus('Error reading image file', true);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDeleteClick = (record) => {
