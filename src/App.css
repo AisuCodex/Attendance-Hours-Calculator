@@ -663,6 +663,45 @@ select option:first-child {
     display: none !important;
   }
 
+  /* Hide the last column (action column) */
+  table th:last-child,
+  table td:last-child {
+    display: none !important;
+  }
+
+  /* Adjust other columns to take up the space */
+  table th:nth-child(1),
+  table td:nth-child(1) {
+    width: 22%;
+  }
+
+  table th:nth-child(2),
+  table td:nth-child(2) {
+    width: 17%;
+  }
+
+  table th:nth-child(3),
+  table td:nth-child(3) {
+    width: 13%;
+  }
+
+  table th:nth-child(4),
+  table td:nth-child(4),
+  table th:nth-child(5),
+  table td:nth-child(5) {
+    width: 12%;
+  }
+
+  table th:nth-child(6),
+  table td:nth-child(6) {
+    width: 10%;
+  }
+
+  table th:nth-child(7),
+  table td:nth-child(7) {
+    width: 14%;
+  }
+
   .container {
     padding: 0;
     margin: 0;
@@ -676,6 +715,18 @@ select option:first-child {
   td {
     border: 1px solid #000;
     padding: 8px;
+  }
+
+  /* Ensure white background and black text for better printing */
+  body {
+    background: white;
+    color: black;
+  }
+
+  /* Remove any box-shadows and backgrounds */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
   }
 }
 
