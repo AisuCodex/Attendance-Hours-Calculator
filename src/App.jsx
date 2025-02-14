@@ -373,10 +373,10 @@ function App() {
                         }
                       >
                         <option value="">Select Role</option>
-                        <option value="Intern">Intern</option>
-                        <option value="Student">Student</option>
-                        <option value="Teacher">Teacher</option>
-                        <option value="Admin">Admin</option>
+                        <option value="Intern">Web Developer</option>
+                        <option value="Student">UI/UX</option>
+                        <option value="Teacher">QA</option>
+                        {/* <option value="Admin">Admin</option> */}
                       </select>
                     </td>
                     <td>
