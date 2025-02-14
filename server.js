@@ -12,21 +12,36 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
-// Serve static files from the dist directory with proper MIME types
+// Serve static files from the dist directory with proper MIME types and logging
 app.use(
   express.static(join(__dirname, 'dist'), {
     setHeaders: (res, path) => {
+      console.log('Serving static file:', path);
       if (path.endsWith('.js')) {
         res.setHeader('Content-Type', 'application/javascript');
+        console.log('Set JS MIME type for:', path);
       } else if (path.endsWith('.css')) {
         res.setHeader('Content-Type', 'text/css');
+        console.log('Set CSS MIME type for:', path);
       }
     },
   })
 );
+
+// Log all requests
+app.use((req, res, next) => {
+  console.log('Request:', req.method, req.path, 'Headers:', req.headers);
+  next();
+});
 
 // Ensure data directory exists
 const dataDir = join(__dirname, 'data');
