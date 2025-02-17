@@ -36,6 +36,8 @@ function App() {
     recordId: null,
     studentName: '',
   });
+  const [showTotalHours, setShowTotalHours] = useState(false);
+  const [totalHours, setTotalHours] = useState('0.00');
 
   useEffect(() => {
     loadRecords();
@@ -170,12 +172,14 @@ function App() {
   };
 
   const calculateTotalHours = () => {
-    return filteredRecords
+    const total = filteredRecords
       .reduce(
         (total, record) => total + (parseFloat(record.totalHours) || 0),
         0
       )
       .toFixed(2);
+    setTotalHours(total);
+    setShowTotalHours(true);
   };
 
   const handlePrint = () => {
@@ -500,7 +504,7 @@ function App() {
               <Calculator size={18} /> Calculate Total Hours
             </button>
             <div className="total-hours">
-              Total Hours Worked: {calculateTotalHours()} hrs
+              {showTotalHours ? `Total Hours Worked: ${totalHours} hrs` : ''}
             </div>
           </div>
         </>
