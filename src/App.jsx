@@ -24,6 +24,7 @@ import {
 function App() {
   const [records, setRecords] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchDate, setSearchDate] = useState('');
   const [saveStatus, setSaveStatus] = useState({
     show: false,
     message: '',
@@ -274,9 +275,15 @@ function App() {
     setDeleteModal({ show: false, recordId: null, studentName: '' });
   };
 
-  const filteredRecords = records.filter((record) =>
-    record.studentName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredRecords = records.filter((record) => {
+    const searchTermLower = searchTerm.toLowerCase();
+    const nameMatch = record.studentName
+      .toLowerCase()
+      .includes(searchTermLower);
+    const roleMatch = record.role.toLowerCase().includes(searchTermLower);
+    const dateMatch = !searchDate || record.date.includes(searchDate);
+    return (nameMatch || roleMatch) && dateMatch;
+  });
 
   return (
     <div className="container">
@@ -310,9 +317,14 @@ function App() {
             <div className="search-bar">
               <input
                 type="text"
-                placeholder="Search records..."
+                placeholder="Search by name"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <input
+                type="date"
+                value={searchDate}
+                onChange={(e) => setSearchDate(e.target.value)}
               />
               <button className="search-btn">
                 <Search size={18} /> Search
