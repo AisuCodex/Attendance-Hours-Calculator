@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import Database from 'better-sqlite3';
+import sqlite3 from 'sqlite3';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, mkdirSync } from 'fs';
@@ -23,21 +23,23 @@ if (!existsSync(dataDir)) {
 
 // Initialize database
 const dbPath = path.join(dataDir, 'attendance.db');
-const db = new Database(dbPath);
+const db = new sqlite3.Database(dbPath);
 
 // Create tables if they don't exist
-db.exec(`
-  CREATE TABLE IF NOT EXISTS attendance (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    studentName TEXT,
-    role TEXT,
-    date TEXT,
-    timeIn TEXT,
-    timeOut TEXT,
-    totalHours TEXT,
-    imageUrl TEXT
-  )
-`);
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS attendance (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      studentName TEXT,
+      role TEXT,
+      date TEXT,
+      timeIn TEXT,
+      timeOut TEXT,
+      totalHours TEXT,
+      imageUrl TEXT
+    )
+  `);
+});
 
 // Serve static files with proper MIME types
 app.use(
@@ -55,9 +57,13 @@ app.use(
 // API Routes
 app.get('/api/records', (req, res) => {
   try {
-    const stmt = db.prepare('SELECT * FROM attendance ORDER BY date DESC');
-    const records = stmt.all();
-    res.json(records);
+    db.all('SELECT * FROM attendance ORDER BY date DESC', [], (err, rows) => {
+      if (err) {
+        console.error('Error fetching records:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      res.json(rows);
+    });
   } catch (error) {
     console.error('Error fetching records:', error);
     res.status(500).json({ error: error.message });
@@ -67,22 +73,30 @@ app.get('/api/records', (req, res) => {
 app.post('/api/records', (req, res) => {
   try {
     const record = req.body;
-    const stmt = db.prepare(`
+    const sql = `
       INSERT INTO attendance (studentName, role, date, timeIn, timeOut, totalHours, imageUrl)
-      VALUES (@studentName, @role, @date, @timeIn, @timeOut, @totalHours, @imageUrl)
-    `);
-
-    const result = stmt.run({
-      studentName: record.studentName || '',
-      role: record.role || '',
-      date: record.date || '',
-      timeIn: record.timeIn || '',
-      timeOut: record.timeOut || '',
-      totalHours: record.totalHours || '',
-      imageUrl: record.imageUrl || '',
-    });
-
-    res.json({ id: result.lastInsertRowid });
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    db.run(
+      sql, 
+      [
+        record.studentName || '',
+        record.role || '',
+        record.date || '',
+        record.timeIn || '',
+        record.timeOut || '',
+        record.totalHours || '',
+        record.imageUrl || ''
+      ],
+      function(err) {
+        if (err) {
+          console.error('Error saving record:', err);
+          return res.status(500).json({ error: err.message });
+        }
+        res.json({ id: this.lastID });
+      }
+    );
   } catch (error) {
     console.error('Error saving record:', error);
     res.status(500).json({ error: error.message });
@@ -93,34 +107,43 @@ app.put('/api/records/:id', (req, res) => {
   try {
     const { id } = req.params;
     const record = req.body;
-    const stmt = db.prepare(`
+    const sql = `
       UPDATE attendance 
-      SET studentName = @studentName,
-          role = @role,
-          date = @date,
-          timeIn = @timeIn,
-          timeOut = @timeOut,
-          totalHours = @totalHours,
-          imageUrl = @imageUrl
-      WHERE id = @id
-    `);
+      SET studentName = ?,
+          role = ?,
+          date = ?,
+          timeIn = ?,
+          timeOut = ?,
+          totalHours = ?,
+          imageUrl = ?
+      WHERE id = ?
+    `;
 
-    const result = stmt.run({
-      id: parseInt(id),
-      studentName: record.studentName || '',
-      role: record.role || '',
-      date: record.date || '',
-      timeIn: record.timeIn || '',
-      timeOut: record.timeOut || '',
-      totalHours: record.totalHours || '',
-      imageUrl: record.imageUrl || '',
-    });
-
-    if (result.changes === 0) {
-      res.status(404).json({ error: 'Record not found' });
-    } else {
-      res.json({ changes: result.changes });
-    }
+    db.run(
+      sql,
+      [
+        record.studentName || '',
+        record.role || '',
+        record.date || '',
+        record.timeIn || '',
+        record.timeOut || '',
+        record.totalHours || '',
+        record.imageUrl || '',
+        parseInt(id)
+      ],
+      function(err) {
+        if (err) {
+          console.error('Error updating record:', err);
+          return res.status(500).json({ error: err.message });
+        }
+        
+        if (this.changes === 0) {
+          return res.status(404).json({ error: 'Record not found' });
+        }
+        
+        res.json({ changes: this.changes });
+      }
+    );
   } catch (error) {
     console.error('Error updating record:', error);
     res.status(500).json({ error: error.message });
@@ -130,14 +153,18 @@ app.put('/api/records/:id', (req, res) => {
 app.delete('/api/records/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const stmt = db.prepare('DELETE FROM attendance WHERE id = ?');
-    const result = stmt.run(id);
-
-    if (result.changes === 0) {
-      res.status(404).json({ error: 'Record not found' });
-    } else {
-      res.json({ changes: result.changes });
-    }
+    db.run('DELETE FROM attendance WHERE id = ?', id, function(err) {
+      if (err) {
+        console.error('Error deleting record:', err);
+        return res.status(500).json({ error: err.message });
+      }
+      
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'Record not found' });
+      }
+      
+      res.json({ changes: this.changes });
+    });
   } catch (error) {
     console.error('Error deleting record:', error);
     res.status(500).json({ error: error.message });

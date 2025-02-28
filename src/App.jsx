@@ -108,7 +108,9 @@ function App() {
         ? 24 * 60 - inTime + outTime // Worked past midnight
         : outTime - inTime;
 
-    return (totalMinutes / 60).toFixed(2);
+    // Subtract 1 hour (60 minutes) for lunch time and convert to hours
+    const totalHoursAfterLunch = Math.max(0, (totalMinutes - 60) / 60);
+    return totalHoursAfterLunch.toFixed(2);
   };
 
   const saveRecordHandler = async (record) => {
@@ -383,8 +385,8 @@ function App() {
               </thead>
               <tbody>
                 {filteredRecords.map((record) => (
-                  <tr key={record.id}>
-                    <td>
+                  <tr key={record.id} className="record-row">
+                    <td data-label="Student Name">
                       <input
                         type="text"
                         placeholder="Enter name..."
@@ -398,7 +400,7 @@ function App() {
                         }
                       />
                     </td>
-                    <td>
+                    <td data-label="Role">
                       <select
                         value={record.role}
                         onChange={(e) =>
@@ -412,7 +414,7 @@ function App() {
                         {/* <option value="Admin">Admin</option> */}
                       </select>
                     </td>
-                    <td>
+                    <td data-label="Date">
                       <input
                         type="date"
                         value={record.date}
@@ -421,7 +423,7 @@ function App() {
                         }
                       />
                     </td>
-                    <td>
+                    <td data-label="Time In">
                       <input
                         type="time"
                         value={record.timeIn}
@@ -434,7 +436,7 @@ function App() {
                         }
                       />
                     </td>
-                    <td>
+                    <td data-label="Time Out">
                       <input
                         type="time"
                         value={record.timeOut}
@@ -447,10 +449,10 @@ function App() {
                         }
                       />
                     </td>
-                    <td className="hours-cell">
+                    <td data-label="Hours" className="hours-cell">
                       {record.totalHours ? `${record.totalHours} hrs` : '-'}
                     </td>
-                    <td className="signature-cell">
+                    <td data-label="Signature" className="signature-cell">
                       {record.imageUrl ? (
                         <div className="signature-preview">
                           <img
@@ -489,7 +491,7 @@ function App() {
                         </div>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <button
                         className="save-btn"
                         title="Save"

@@ -39,7 +39,7 @@ body {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 10px;
+  padding: 15px;
   width: 100%;
   min-height: 100vh;
 }
@@ -121,29 +121,37 @@ header h1 {
   flex-wrap: wrap;
 }
 
+/* Touch-friendly styling for inputs and buttons */
+input,
+select,
 button {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 4px;
+  font-size: 16px; /* Prevents iOS zoom on focus */
+  touch-action: manipulation; /* Improves touch experience */
+}
+
+button {
   cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s;
-  display: inline-flex;
+  padding: 8px 16px;
+  background-color: var(--secondary-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-color);
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 40px;
-  font-size: 14px;
-  white-space: nowrap;
+  gap: 5px;
+  font-weight: 500;
+  transition: background-color 0.2s, transform 0.1s;
+  min-height: 44px; /* Touch-friendly height */
 }
 
 button:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
+  background-color: #e2e6ea;
+  border-color: #dae0e5;
 }
 
 button:active {
-  transform: translateY(0);
+  transform: translateY(1px);
 }
 
 .add-btn {
@@ -409,33 +417,45 @@ select option:first-child {
   .controls {
     flex-direction: column;
     align-items: stretch;
-    gap: 10px;
+    gap: 15px;
+    margin-bottom: 20px;
   }
 
   .search-bar {
     width: 100%;
     flex-direction: column;
+    gap: 10px;
   }
 
   .search-bar input {
     width: 100%;
-    height: 40px;
+    max-width: 100%;
+    height: 44px; /* Larger touch target */
+    font-size: 16px;
   }
 
   .action-buttons {
-    justify-content: stretch;
+    justify-content: center;
     width: 100%;
-    gap: 8px;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
   .action-buttons button {
     flex: 1;
-    min-height: 40px;
+    min-width: 120px;
+    min-height: 44px;
     white-space: nowrap;
+    font-size: 14px;
   }
 
-  /* Card view for mobile */
+  /* Improved card view for mobile */
   @media screen and (max-width: 640px) {
+    .table-container {
+      border: none;
+      background: transparent;
+    }
+
     table,
     thead,
     tbody,
@@ -445,57 +465,141 @@ select option:first-child {
       display: block;
     }
 
+    table {
+      background: transparent;
+      border: none;
+    }
+
     thead tr {
       position: absolute;
       top: -9999px;
       left: -9999px;
     }
 
-    tr {
-      margin-bottom: 15px;
+    .record-row {
+      margin-bottom: 20px;
       border: 1px solid var(--border-color);
-      border-radius: 4px;
+      border-radius: 8px;
       background: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      padding: 12px;
+      position: relative;
     }
 
     td {
       position: relative;
-      padding-left: 50%;
+      padding: 12px 12px 12px 45%;
       text-align: left;
-      min-height: 40px;
+      min-height: 50px;
       display: flex;
       align-items: center;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    td:last-child {
+      border-bottom: none;
     }
 
     td:before {
       position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
       left: 12px;
-      width: 45%;
+      width: 40%;
       padding-right: 10px;
       white-space: nowrap;
       font-weight: bold;
       content: attr(data-label);
+      color: var(--primary-color);
+      text-align: left;
+      font-size: 15px;
+    }
+
+    td input,
+    td select {
+      width: 100%;
+      height: 44px;
+      padding: 8px 12px;
+      font-size: 16px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    td input:focus,
+    td select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(0, 85, 135, 0.2);
     }
 
     .signature-cell {
       width: 100%;
       text-align: center;
+      padding: 15px 15px 15px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Override the default padding for signature cell to make it full width */
+    td.signature-cell {
       padding-left: 12px;
     }
 
-    .signature-image {
-      max-width: 80%;
-      margin: 0 auto;
+    td.signature-cell:before {
+      position: static;
+      width: 100%;
+      display: block;
+      transform: none;
+      margin-bottom: 10px;
+      text-align: center;
     }
 
-    td:last-child {
-      border-bottom: 0;
+    .signature-image {
+      max-width: 90%;
+      margin: 10px auto;
+      border: 1px dashed #ccc;
+      padding: 5px;
+    }
+
+    .signature-placeholder {
+      width: 100%;
+      padding: 20px;
+    }
+
+    .hours-cell {
+      font-weight: bold;
     }
 
     .save-btn,
     .delete-btn {
-      width: 40px;
-      height: 40px;
+      min-width: 44px;
+      height: 44px;
+      width: auto;
+      padding: 10px;
+    }
+
+    /* Action buttons container inside rows */
+    td:last-child {
+      justify-content: center;
+      gap: 10px;
+      padding: 15px;
+    }
+
+    /* Ensure action buttons are properly centered */
+    td[data-label='Actions'] {
+      display: flex;
+      justify-content: center;
+      padding-left: 12px;
+    }
+
+    td[data-label='Actions']:before {
+      position: static;
+      width: 100%;
+      display: block;
+      transform: none;
+      margin-bottom: 10px;
+      text-align: center;
     }
   }
 }
@@ -511,119 +615,187 @@ select option:first-child {
     padding-bottom: 10px;
   }
 
+  header h1 {
+    font-size: clamp(1.2rem, 5vw, 1.5rem);
+  }
+
   .controls {
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
 
   .search-bar {
     flex-direction: column;
     width: 100%;
+    gap: 8px;
   }
 
   .search-bar input {
     width: 100%;
-    margin-bottom: 4px;
+    margin-bottom: 0;
+    height: 44px;
+    font-size: 16px;
+  }
+
+  .search-btn {
+    width: 100%;
+    height: 44px;
+    font-size: 16px;
   }
 
   .action-buttons {
     width: 100%;
-    justify-content: stretch;
-    gap: 6px;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 
   .action-buttons button {
-    flex: 1;
+    flex: 1 1 140px;
     padding: 10px;
-    font-size: 13px;
+    font-size: 14px;
     min-width: 0;
+    height: 44px;
   }
 
   button svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
 
-  .add-btn,
-  .print-btn,
-  .download-btn {
-    width: 100%;
-    justify-content: center;
+  .record-row {
+    margin-bottom: 15px;
   }
 
-  html {
+  td {
+    min-height: 44px;
+    padding: 10px 10px 10px 45%;
+  }
+
+  td:before {
     font-size: 14px;
   }
 
-  header h1 {
-    font-size: 1.3rem;
+  /* Better styling for record actions on mobile */
+  td[data-label='Actions'] {
+    background-color: rgba(0, 85, 135, 0.05);
+    border-radius: 0 0 8px 8px;
   }
 
+  .save-btn,
+  .delete-btn {
+    min-width: 80px;
+    height: 40px;
+    font-size: 14px;
+  }
+
+  .save-btn {
+    background-color: var(--success-color);
+    color: white;
+  }
+
+  .delete-btn {
+    background-color: var(--danger-color);
+    color: white;
+  }
+
+  /* Footer styling */
+  .footer {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+    padding-top: 15px;
+  }
+
+  .calculate-btn {
+    width: 100%;
+    height: 44px;
+  }
+
+  .total-hours {
+    font-size: 16px;
+    text-align: center;
+    width: 100%;
+  }
+
+  /* Modal styles for mobile */
   .modal-content {
-    width: 90%;
-    padding: 16px;
-    margin: 10px;
+    width: 95%;
+    padding: 15px;
+    margin: 0 10px;
+  }
+
+  .modal-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .modal-body {
+    font-size: 0.95rem;
+    margin-bottom: 15px;
   }
 
   .modal-footer {
-    flex-direction: column;
+    flex-direction: column-reverse;
     gap: 8px;
   }
 
   .modal-footer button {
     width: 100%;
+    min-height: 44px;
     margin: 0;
-  }
-
-  .save-status {
-    top: 10px;
-    right: 10px;
-    left: 10px;
-    text-align: center;
-  }
-
-  .footer {
-    flex-direction: column;
-    gap: 15px;
-    text-align: center;
-  }
-
-  .total-hours {
-    justify-content: center;
-  }
-
-  .logo {
-    height: 80px;
   }
 }
 
-/* Very small screens */
+/* Extra small mobile styles */
 @media screen and (max-width: 360px) {
   .container {
     padding: 5px;
   }
 
-  .search-bar input {
+  header h1 {
+    font-size: 1.2rem;
+  }
+
+  .logo {
+    height: 80px;
+  }
+
+  tr {
+    padding: 8px;
+  }
+
+  td {
+    padding: 10px 10px 10px 45%;
+    min-height: 44px;
+  }
+
+  td:before {
     font-size: 14px;
-    height: 36px;
   }
 
-  button {
-    padding: 6px 10px;
-    font-size: 12px;
-    min-height: 36px;
-  }
-
-  button svg {
-    width: 14px;
-    height: 14px;
+  .search-bar input,
+  .search-btn,
+  .action-buttons button {
+    height: 40px;
+    font-size: 14px;
   }
 }
 
-/* Landscape mode optimization */
+/* Fix landscape orientation issues on mobile */
 @media screen and (max-height: 480px) and (orientation: landscape) {
   .container {
     padding: 5px;
+  }
+
+  header {
+    flex-direction: row;
+    align-items: center;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+  }
+
+  .logo {
+    height: 60px;
   }
 
   .controls {
@@ -633,16 +805,13 @@ select option:first-child {
 
   .search-bar {
     flex-direction: row;
-    flex: 2;
+    flex-wrap: wrap;
   }
 
-  .action-buttons {
-    flex: 1;
-    justify-content: flex-end;
-  }
-
-  .action-buttons button {
-    width: auto;
+  /* Ensure the table is scrollable in landscape */
+  .table-container {
+    max-height: 60vh;
+    overflow-y: auto;
   }
 }
 
@@ -802,46 +971,53 @@ select option:first-child {
   font-size: 0.9em;
 }
 
+/* Modal styles */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  backdrop-filter: blur(2px);
 }
 
 .modal-content {
   background: white;
-  padding: 24px;
+  width: 90%;
+  max-width: 500px;
   border-radius: 8px;
-  width: 100%;
-  max-width: 400px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  animation: slideIn 0.3s ease-out;
+  overflow: hidden;
+  padding: 20px;
 }
 
 .modal-header {
-  margin-bottom: 16px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
 }
 
 .modal-header h3 {
-  color: var(--text-color);
   margin: 0;
+  color: var(--primary-color);
+  font-size: 1.3rem;
 }
 
 .modal-body {
-  margin-bottom: 24px;
-  color: var(--text-color);
+  margin-bottom: 20px;
+  line-height: 1.5;
 }
 
 .modal-footer {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
 }
 
 .modal-footer button {
@@ -851,10 +1027,38 @@ select option:first-child {
 .modal-cancel-btn {
   background-color: var(--secondary-color);
   color: var(--text-color);
-  border: 1px solid var(--border-color);
 }
 
 .modal-delete-btn {
   background-color: var(--danger-color);
   color: white;
+}
+
+/* Mobile-optimized modal */
+@media screen and (max-width: 480px) {
+  .modal-content {
+    width: 95%;
+    padding: 15px;
+    margin: 0 10px;
+  }
+
+  .modal-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .modal-body {
+    font-size: 0.95rem;
+    margin-bottom: 15px;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .modal-footer button {
+    width: 100%;
+    min-height: 44px;
+    margin: 0;
+  }
 }
