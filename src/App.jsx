@@ -115,14 +115,6 @@ function App() {
 
   const saveRecordHandler = async (record) => {
     try {
-      if (!record.studentName || !record.role || !record.date) {
-        showSaveStatus(
-          'Please fill in required fields (Name, Role, Date)',
-          true
-        );
-        return;
-      }
-
       console.log('Saving record:', record);
       let savedRecord;
 
