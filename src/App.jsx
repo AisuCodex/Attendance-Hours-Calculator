@@ -25,6 +25,7 @@ function App() {
   const [records, setRecords] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchDate, setSearchDate] = useState('');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [saveStatus, setSaveStatus] = useState({
     show: false,
     message: '',
@@ -42,12 +43,12 @@ function App() {
 
   useEffect(() => {
     loadRecords();
-  }, []);
+  }, [sortOrder]);
 
   const loadRecords = async () => {
     try {
       setIsLoading(true);
-      const loadedRecords = await getAllRecords();
+      const loadedRecords = await getAllRecords(sortOrder);
       setRecords(loadedRecords || []);
       setError(null);
     } catch (error) {
@@ -77,6 +78,7 @@ function App() {
       timeOut: '',
       totalHours: '',
       imageUrl: null,
+      createdAt: Date.now(),
     };
     setRecords((prevRecords) => [newRecord, ...prevRecords]);
   };
@@ -126,8 +128,12 @@ function App() {
       ) {
         delete recordToSave.id;
         // Save new record
-        const newId = await saveRecord(recordToSave);
-        savedRecord = { ...recordToSave, id: newId };
+        const result = await saveRecord(recordToSave);
+        savedRecord = {
+          ...recordToSave,
+          id: result.id,
+          createdAt: result.createdAt,
+        };
         showSaveStatus('Record saved successfully');
       } else {
         // Update existing record
@@ -320,6 +326,14 @@ function App() {
                 value={searchDate}
                 onChange={(e) => setSearchDate(e.target.value)}
               />
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="sort-select"
+              >
+                <option value="desc">Newest Created First</option>
+                <option value="asc">Oldest Created First</option>
+              </select>
               <button className="search-btn">
                 <Search size={18} /> Search
               </button>

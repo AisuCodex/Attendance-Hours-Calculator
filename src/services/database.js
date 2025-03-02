@@ -50,10 +50,10 @@ export async function updateRecord(record) {
   }
 }
 
-export async function getAllRecords() {
+export async function getAllRecords(sortOrder = 'desc') {
   console.log('Fetching all records');
   try {
-    const response = await fetch(`${API_URL}/records`);
+    const response = await fetch(`${API_URL}/records?sort=${sortOrder}`);
 
     if (!response.ok) {
       const error = await response.json();

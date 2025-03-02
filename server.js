@@ -36,7 +36,8 @@ db.serialize(() => {
       timeIn TEXT,
       timeOut TEXT,
       totalHours TEXT,
-      imageUrl TEXT
+      imageUrl TEXT,
+      createdAt INTEGER DEFAULT (strftime('%s','now') * 1000 + (strftime('%f','now') % 1000))
     )
   `);
 });
@@ -57,13 +58,20 @@ app.use(
 // API Routes
 app.get('/api/records', (req, res) => {
   try {
-    db.all('SELECT * FROM attendance ORDER BY date DESC', [], (err, rows) => {
-      if (err) {
-        console.error('Error fetching records:', err);
-        return res.status(500).json({ error: err.message });
+    const sortOrder = req.query.sort || 'desc';
+    const orderBy = sortOrder === 'asc' ? 'ASC' : 'DESC';
+
+    db.all(
+      `SELECT * FROM attendance ORDER BY createdAt ${orderBy}`,
+      [],
+      (err, rows) => {
+        if (err) {
+          console.error('Error fetching records:', err);
+          return res.status(500).json({ error: err.message });
+        }
+        res.json(rows);
       }
-      res.json(rows);
-    });
+    );
   } catch (error) {
     console.error('Error fetching records:', error);
     res.status(500).json({ error: error.message });
@@ -74,12 +82,23 @@ app.post('/api/records', (req, res) => {
   try {
     const record = req.body;
     const sql = `
-      INSERT INTO attendance (studentName, role, date, timeIn, timeOut, totalHours, imageUrl)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO attendance (
+        studentName, 
+        role, 
+        date, 
+        timeIn, 
+        timeOut, 
+        totalHours, 
+        imageUrl,
+        createdAt
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    
+
+    const now = Date.now(); // Current timestamp in milliseconds
+
     db.run(
-      sql, 
+      sql,
       [
         record.studentName || '',
         record.role || '',
@@ -87,14 +106,15 @@ app.post('/api/records', (req, res) => {
         record.timeIn || '',
         record.timeOut || '',
         record.totalHours || '',
-        record.imageUrl || ''
+        record.imageUrl || '',
+        now,
       ],
-      function(err) {
+      function (err) {
         if (err) {
           console.error('Error saving record:', err);
           return res.status(500).json({ error: err.message });
         }
-        res.json({ id: this.lastID });
+        res.json({ id: this.lastID, createdAt: now });
       }
     );
   } catch (error) {
@@ -129,18 +149,18 @@ app.put('/api/records/:id', (req, res) => {
         record.timeOut || '',
         record.totalHours || '',
         record.imageUrl || '',
-        parseInt(id)
+        parseInt(id),
       ],
-      function(err) {
+      function (err) {
         if (err) {
           console.error('Error updating record:', err);
           return res.status(500).json({ error: err.message });
         }
-        
+
         if (this.changes === 0) {
           return res.status(404).json({ error: 'Record not found' });
         }
-        
+
         res.json({ changes: this.changes });
       }
     );
@@ -153,16 +173,16 @@ app.put('/api/records/:id', (req, res) => {
 app.delete('/api/records/:id', (req, res) => {
   try {
     const { id } = req.params;
-    db.run('DELETE FROM attendance WHERE id = ?', id, function(err) {
+    db.run('DELETE FROM attendance WHERE id = ?', id, function (err) {
       if (err) {
         console.error('Error deleting record:', err);
         return res.status(500).json({ error: err.message });
       }
-      
+
       if (this.changes === 0) {
         return res.status(404).json({ error: 'Record not found' });
       }
-      
+
       res.json({ changes: this.changes });
     });
   } catch (error) {
