@@ -68,9 +68,8 @@ function App() {
     );
   };
 
-  const addRow = () => {
+  const addRow = async () => {
     const newRecord = {
-      id: `temp_${Date.now()}`,
       studentName: '',
       role: '',
       date: '',
@@ -78,9 +77,22 @@ function App() {
       timeOut: '',
       totalHours: '',
       imageUrl: null,
-      createdAt: Date.now(),
     };
-    setRecords((prevRecords) => [newRecord, ...prevRecords]);
+
+    try {
+      // Save the record immediately
+      const result = await saveRecord(newRecord);
+      const savedRecord = {
+        ...newRecord,
+        id: result.id,
+        createdAt: result.createdAt,
+      };
+      setRecords((prevRecords) => [savedRecord, ...prevRecords]);
+      showSaveStatus('New row added successfully');
+    } catch (error) {
+      console.error('Error adding new row:', error);
+      showSaveStatus('Error adding new row', true);
+    }
   };
 
   const deleteRow = async (id) => {
@@ -115,47 +127,7 @@ function App() {
     return totalHoursAfterLunch.toFixed(2);
   };
 
-  const saveRecordHandler = async (record) => {
-    try {
-      console.log('Saving record:', record);
-      let savedRecord;
-
-      // Remove the temporary ID before saving
-      const recordToSave = { ...record };
-      if (
-        typeof recordToSave.id === 'string' &&
-        recordToSave.id.startsWith('temp_')
-      ) {
-        delete recordToSave.id;
-        // Save new record
-        const result = await saveRecord(recordToSave);
-        savedRecord = {
-          ...recordToSave,
-          id: result.id,
-          createdAt: result.createdAt,
-        };
-        showSaveStatus('Record saved successfully');
-      } else {
-        // Update existing record
-        await updateRecord(record);
-        savedRecord = record;
-        showSaveStatus('Record updated successfully');
-      }
-
-      // Update the records state with the saved record
-      setRecords((prevRecords) =>
-        prevRecords.map((r) => (r.id === record.id ? savedRecord : r))
-      );
-
-      // Reload all records to ensure we have the latest data
-      await loadRecords();
-    } catch (error) {
-      console.error('Error saving record:', error);
-      showSaveStatus(`Error saving record: ${error.message}`, true);
-    }
-  };
-
-  const handleRecordUpdate = (id, field, value) => {
+  const handleRecordUpdate = async (id, field, value) => {
     setRecords((prevRecords) =>
       prevRecords.map((record) => {
         if (record.id === id) {
@@ -165,11 +137,39 @@ function App() {
             const timeOut = field === 'timeOut' ? value : record.timeOut;
             updatedRecord.totalHours = calculateHours(timeIn, timeOut);
           }
+
+          // Auto-save the changes
+          saveRecordHandler(updatedRecord).catch((error) => {
+            console.error('Error auto-saving record:', error);
+            showSaveStatus('Error saving changes', true);
+          });
+
           return updatedRecord;
         }
         return record;
       })
     );
+  };
+
+  const saveRecordHandler = async (record) => {
+    try {
+      console.log('Saving record:', record);
+      let savedRecord;
+
+      // Update existing record
+      await updateRecord(record);
+      savedRecord = record;
+      showSaveStatus('Changes saved successfully');
+
+      // Update the records state with the saved record
+      setRecords((prevRecords) =>
+        prevRecords.map((r) => (r.id === record.id ? savedRecord : r))
+      );
+    } catch (error) {
+      console.error('Error saving record:', error);
+      showSaveStatus(`Error saving record: ${error.message}`, true);
+      throw error; // Re-throw the error so we can handle it in handleRecordUpdate
+    }
   };
 
   const calculateTotalHours = () => {
