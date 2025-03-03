@@ -137,13 +137,6 @@ function App() {
             const timeOut = field === 'timeOut' ? value : record.timeOut;
             updatedRecord.totalHours = calculateHours(timeIn, timeOut);
           }
-
-          // Auto-save the changes
-          saveRecordHandler(updatedRecord).catch((error) => {
-            console.error('Error auto-saving record:', error);
-            showSaveStatus('Error saving changes', true);
-          });
-
           return updatedRecord;
         }
         return record;
@@ -156,19 +149,35 @@ function App() {
       console.log('Saving record:', record);
       let savedRecord;
 
-      // Update existing record
-      await updateRecord(record);
-      savedRecord = record;
-      showSaveStatus('Changes saved successfully');
+      // Check if this is a new record (no ID) or an existing one
+      if (!record.id) {
+        // Save new record
+        const result = await saveRecord(record);
+        savedRecord = {
+          ...record,
+          id: result.id,
+          createdAt: result.createdAt,
+        };
+        showSaveStatus('New record saved successfully');
+      } else {
+        // Update existing record
+        await updateRecord(record);
+        savedRecord = record;
+        showSaveStatus('Changes saved successfully');
+      }
 
       // Update the records state with the saved record
       setRecords((prevRecords) =>
-        prevRecords.map((r) => (r.id === record.id ? savedRecord : r))
+        prevRecords.map((r) =>
+          r.id === record.id || (!r.id && !record.id) ? savedRecord : r
+        )
       );
+
+      return savedRecord;
     } catch (error) {
       console.error('Error saving record:', error);
       showSaveStatus(`Error saving record: ${error.message}`, true);
-      throw error; // Re-throw the error so we can handle it in handleRecordUpdate
+      throw error;
     }
   };
 
@@ -259,15 +268,35 @@ function App() {
 
   const handleDeleteConfirm = async () => {
     try {
-      await deleteRecord(deleteModal.recordId);
-      setRecords(
-        records.filter((record) => record.id !== deleteModal.recordId)
+      // Check if the record exists and has a valid ID
+      if (!deleteModal.recordId) {
+        showSaveStatus('Invalid record to delete', true);
+        setDeleteModal({ show: false, recordId: null, studentName: '' });
+        return;
+      }
+
+      // First remove from local state to make UI feel more responsive
+      setRecords((prevRecords) =>
+        prevRecords.filter((record) => record.id !== deleteModal.recordId)
       );
+
+      // Then attempt to delete from database
+      await deleteRecord(deleteModal.recordId);
       showSaveStatus('Record deleted successfully');
-      setDeleteModal({ show: false, recordId: null, studentName: '' });
     } catch (error) {
       console.error('Error deleting record:', error);
-      showSaveStatus('Error deleting record', true);
+
+      // If delete failed, reload the records to ensure UI is in sync with database
+      try {
+        const loadedRecords = await getAllRecords(sortOrder);
+        setRecords(loadedRecords || []);
+      } catch (loadError) {
+        console.error('Error reloading records:', loadError);
+      }
+
+      showSaveStatus(`Error deleting record: ${error.message}`, true);
+    } finally {
+      setDeleteModal({ show: false, recordId: null, studentName: '' });
     }
   };
 

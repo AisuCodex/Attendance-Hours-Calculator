@@ -70,20 +70,27 @@ export async function getAllRecords(sortOrder = 'desc') {
 }
 
 export async function deleteRecord(id) {
-  console.log('Deleting record:', id);
   try {
+    // Don't attempt to delete if no ID is provided
+    if (!id) {
+      throw new Error('No record ID provided');
+    }
+
     const response = await fetch(`${API_URL}/records/${id}`, {
       method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to delete record');
+      throw new Error(
+        error.error || `Failed to delete record (Status: ${response.status})`
+      );
     }
 
-    const result = await response.json();
-    console.log('Record deleted successfully:', result);
-    return result.changes;
+    return true; // Successfully deleted
   } catch (error) {
     console.error('Error deleting record:', error);
     throw error;
