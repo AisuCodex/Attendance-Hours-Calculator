@@ -21,11 +21,19 @@ app.use(express.json({ limit: '50mb' }));
 // PostgreSQL connection configuration
 const { Pool } = pg;
 
-// Log the database URL (without sensitive information)
-console.log(
-  'Database connection attempt with URL:',
-  process.env.DATABASE_URL ? 'URL provided' : 'No URL provided'
+// Validate database URL
+if (!process.env.DATABASE_URL) {
+  console.error('ERROR: DATABASE_URL environment variable is not set');
+  console.error('Please set the DATABASE_URL environment variable');
+  process.exit(1);
+}
+
+// Log database connection attempt (safely)
+const dbUrlSafe = process.env.DATABASE_URL.replace(
+  /postgres:\/\/([^:]+):([^@]+)@/,
+  'postgres://[USERNAME]:[PASSWORD]@'
 );
+console.log('Attempting to connect to database:', dbUrlSafe);
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -43,48 +51,58 @@ const pool = new Pool({
 // Test database connection and create table if it doesn't exist
 async function initializeDatabase() {
   let client;
-  try {
-    // Test the connection
-    client = await pool.connect();
-    console.log('Successfully connected to the database');
+  let retries = 5;
 
-    // Create the attendance table if it doesn't exist
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS attendance (
-        id SERIAL PRIMARY KEY,
-        studentName TEXT,
-        role TEXT,
-        date TEXT,
-        timeIn TEXT,
-        timeOut TEXT,
-        totalHours TEXT,
-        imageUrl TEXT,
-        createdAt BIGINT DEFAULT EXTRACT(EPOCH FROM NOW()) * 1000
-      )
-    `);
+  while (retries > 0) {
+    try {
+      // Test the connection
+      client = await pool.connect();
+      console.log('Successfully connected to the database');
 
-    console.log('Database initialized successfully');
-  } catch (err) {
-    console.error('Database initialization error details:', {
-      message: err.message,
-      code: err.code,
-      stack: err.stack,
-      connectionString: process.env.DATABASE_URL ? 'URL exists' : 'No URL',
-    });
+      // Create the attendance table if it doesn't exist
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS attendance (
+          id SERIAL PRIMARY KEY,
+          studentName TEXT,
+          role TEXT,
+          date TEXT,
+          timeIn TEXT,
+          timeOut TEXT,
+          totalHours TEXT,
+          imageUrl TEXT,
+          createdAt BIGINT DEFAULT EXTRACT(EPOCH FROM NOW()) * 1000
+        )
+      `);
 
-    // Don't exit the process, just log the error
-    console.error(
-      'Warning: Database initialization failed, will retry on requests'
-    );
-  } finally {
-    if (client) {
-      client.release();
+      console.log('Database initialized successfully');
+      return; // Success, exit the function
+    } catch (err) {
+      console.error(`Database initialization attempt ${6 - retries} failed:`, {
+        message: err.message,
+        code: err.code,
+        stack: err.stack,
+      });
+
+      retries--;
+      if (retries > 0) {
+        console.log(`Retrying in 5 seconds... (${retries} attempts remaining)`);
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      }
+    } finally {
+      if (client) {
+        client.release();
+      }
     }
   }
+
+  console.error('Failed to initialize database after 5 attempts');
 }
 
-// Initialize database but don't exit if it fails
-initializeDatabase().catch(console.error);
+// Initialize database
+initializeDatabase().catch((err) => {
+  console.error('Fatal database initialization error:', err);
+  process.exit(1);
+});
 
 // Add a connection error handler
 pool.on('error', (err) => {

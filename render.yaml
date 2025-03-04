@@ -11,8 +11,14 @@ services:
         fromDatabase:
           name: attendance-db
           property: connectionString
+    autoDeploy: true
+    healthCheckPath: /health
+    # Ensure the database is ready before starting the service
+    dependencies:
+      - name: attendance-db
 
 databases:
   - name: attendance-db
     databaseName: attendance
     plan: free
+    ipAllowList: [] # only allow internal connections
