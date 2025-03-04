@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 // Middleware
 app.use(cors());
@@ -61,15 +61,15 @@ async function initializeDatabase() {
 
       // Create the attendance table if it doesn't exist
       await client.query(`
-        CREATE TABLE IF NOT EXISTS attendance (
+    CREATE TABLE IF NOT EXISTS attendance (
           id SERIAL PRIMARY KEY,
-          studentName TEXT,
-          role TEXT,
-          date TEXT,
-          timeIn TEXT,
-          timeOut TEXT,
-          totalHours TEXT,
-          imageUrl TEXT,
+      studentName TEXT,
+      role TEXT,
+      date TEXT,
+      timeIn TEXT,
+      timeOut TEXT,
+      totalHours TEXT,
+      imageUrl TEXT,
           createdAt BIGINT DEFAULT EXTRACT(EPOCH FROM NOW()) * 1000
         )
       `);
@@ -244,4 +244,5 @@ app.get('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
+  console.log(`You can access your application at http://localhost:${PORT}`);
 });
