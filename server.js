@@ -18,19 +18,35 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
-// PostgreSQL connection
+// PostgreSQL connection configuration
 const { Pool } = pg;
+
+// Log the database URL (without sensitive information)
+console.log(
+  'Database connection attempt with URL:',
+  process.env.DATABASE_URL ? 'URL provided' : 'No URL provided'
+);
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
+  // Add connection timeout
+  connectionTimeoutMillis: 5000,
+  // Add idle timeout
+  idleTimeoutMillis: 30000,
+  // Maximum number of clients the pool should contain
+  max: 20,
 });
 
 // Test database connection and create table if it doesn't exist
 async function initializeDatabase() {
+  let client;
   try {
-    const client = await pool.connect();
+    // Test the connection
+    client = await pool.connect();
+    console.log('Successfully connected to the database');
 
     // Create the attendance table if it doesn't exist
     await client.query(`
@@ -48,31 +64,67 @@ async function initializeDatabase() {
     `);
 
     console.log('Database initialized successfully');
-    client.release();
   } catch (err) {
-    console.error('Database initialization error:', err);
-    process.exit(1);
+    console.error('Database initialization error details:', {
+      message: err.message,
+      code: err.code,
+      stack: err.stack,
+      connectionString: process.env.DATABASE_URL ? 'URL exists' : 'No URL',
+    });
+
+    // Don't exit the process, just log the error
+    console.error(
+      'Warning: Database initialization failed, will retry on requests'
+    );
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 }
 
-initializeDatabase();
+// Initialize database but don't exit if it fails
+initializeDatabase().catch(console.error);
+
+// Add a connection error handler
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+});
+
+// Add a health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // API Routes
 app.get('/api/records', async (req, res) => {
+  let client;
   try {
+    client = await pool.connect();
     const sortOrder = req.query.sort || 'desc';
     const orderBy = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
-    const result = await pool.query(
+    const result = await client.query(
       'SELECT * FROM attendance ORDER BY createdAt ' + orderBy
     );
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching records:', error);
-    res.status(500).json({ error: error.message });
+    console.error('Error fetching records:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
+    res.status(500).json({
+      error: error.message,
+      code: error.code,
+    });
+  } finally {
+    if (client) {
+      client.release();
+    }
   }
 });
 
