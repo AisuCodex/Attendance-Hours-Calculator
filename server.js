@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 10000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // Ensure data directory exists
 const dataDir = path.join(__dirname, 'data');
@@ -42,18 +42,8 @@ db.serialize(() => {
   `);
 });
 
-// Serve static files with proper MIME types
-app.use(
-  express.static(path.join(__dirname, 'dist'), {
-    setHeaders: (res, filepath) => {
-      if (filepath.endsWith('.js')) {
-        res.set('Content-Type', 'application/javascript');
-      } else if (filepath.endsWith('.css')) {
-        res.set('Content-Type', 'text/css');
-      }
-    },
-  })
-);
+// Serve static files
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // API Routes
 app.get('/api/records', (req, res) => {
@@ -193,11 +183,16 @@ app.delete('/api/records/:id', (req, res) => {
 
 // Handle client-side routing - must be after API routes
 app.get('*', (req, res) => {
-  if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-  }
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
-app.listen(PORT, () => {
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something broke!' });
+});
+
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
